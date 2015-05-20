@@ -22,41 +22,13 @@
 //THE SOFTWARE.
 
 
-/*options {
-  	language='Java';
-  	//language="Cpp";
-}*/
-
-//{BEGIN parser
-//
 parser grammar Vhdl;
 
-/*options {
-  	k=2;
-  	//buildAST=true;
-}*/
-
-@members {
-	/**
-	 *	Track module declarations and instances.
-	 */
-	public static Tracker	stTracker = new Tracker();
-
-	/**
-	 *	A convenience for building Token
-	 */
-	private static class BldToken extends antlr.CommonToken {
-		private BldToken(Token orig, String news) {
-			super(orig.getType(), news);
-			setFilename(orig.getFilename());
-			setLine(orig.getLine());
-		}
-	}
+options {
+        backtrack = true;
+        language = Php;
+        filter = true;
 }
-@header {
-package parser.vhdl;
-}
-
 
 abstract_literal
 :   decimal_literal
@@ -266,9 +238,9 @@ component_declaration
 ;
 
 component_instantiation_statement
-@init { Token instNm = null, refNm = null;}
+@init { $instNm = null, $refNm = null;}
 :   instNm=label COLON refNm=instantiated_unit 
-			{stTracker.addInstance(refNm, instNm);}
+			{$stTracker.addInstance($refNm, $instNm);}
 		(generic_map_aspect)? (port_map_aspect)? SEMI
 ;
 
@@ -482,8 +454,8 @@ entity_class_entry_list
 ;
 
 entity_declaration
-@init { Token id = null;}
-:   K_ENTITY id=identifier {stTracker.addModule(id);}
+@init { $id = null;}
+:   K_ENTITY id=identifier {$stTracker.addModule(id);}
 		K_IS entity_header entity_declarative_part
         (K_BEGIN entity_statement_part)?
         K_END (K_ENTITY)? (simple_name)? SEMI
@@ -661,9 +633,9 @@ guarded_signal_specification
 ;
 
 identifier returns [Token tok]
-@init { tok=null;}
-:   id=BASIC_IDENTIFIER 	{tok=id;}   
-|	id2=EXTENDED_IDENTIFIER	{tok=id2;}
+@init { $tok=null;}
+:   id=BASIC_IDENTIFIER 	{$tok=$id;}   
+|	id2=EXTENDED_IDENTIFIER	{$tok=$id2;}
 ;
 
 identifier_list
@@ -695,7 +667,7 @@ index_subtype_definition
 ;
 
 instantiated_unit returns [Token tok]
-@init {tok=null;}
+@init {$tok=null;}
 :   (K_COMPONENT)? tok=name
 |   K_ENTITY tok=name (LPAREN identifier RPAREN)? 
 |   K_CONFIGURATION name
@@ -747,7 +719,7 @@ iteration_scheme
 ;
 
 label returns [Token tok]
-@init {tok=null;}
+@init {$tok=null;}
 :   tok=identifier
 ;
 
@@ -827,17 +799,18 @@ multiplying_operator
 //;
 //
 name returns [Token tok]
-@init { 	StringBuilder smplName = null;
-	Token first = null;
-	tok = null;
+@init { $smplName = null;
+	$first = null;
+	$tok = null;
 }
-:   (   tok=simple_name	{smplName = new StringBuilder(tok.getText()); first=tok;}
+:   (   tok=simple_name	{$smplName = $tok.getText(); $first=$tok;}
     |   operator_symbol
     )
     ( /*options {greedy=true;}*/
         (   DOT tok=suffix 
-				{	if ((tok != null) && (null != smplName)) {
-						smplName.append('.').append(tok.getText());
+				{	if (($tok != null) && (null != $smplName)) {
+						$smplName .= ('.')
+						$smplName .= $tok.getText();
 					}
 				}
         |   TIC aggregate
@@ -1206,7 +1179,7 @@ simple_expression
 ;
 
 simple_name returns [Token tok]
-@init {tok=null;}
+@init {$tok=null;}
 :   tok=identifier
 ;
 
@@ -1268,7 +1241,7 @@ subtype_indication
 ;
 
 suffix returns [Token tok]
-@init {tok=null;}
+@init {$tok=null;}
 :   tok=simple_name
 |   character_literal
 |   operator_symbol 
@@ -1343,16 +1316,12 @@ voptions
 
 //=====================================================================
 lexer grammar Vhdl;
-/*options {
-	k=2;
-	charVocabulary='\u0003'..'\u00FF';
 
-	//VHDL is case-insensitive
-	//
+options {
 	caseSensitive=false;
 	caseSensitiveLiterals=false;
 	testLiterals=true;
-}*/
+}
 
 tokens {
 	K_ABS = 'abs' ;
@@ -1453,9 +1422,6 @@ tokens {
 	K_WITH = 'with' ;
 	K_XNOR = 'xnor' ;
 	K_XOR = 'xor' ;
-}
-@header {
-package parser.vhdl;
 }
 
 
